@@ -1,0 +1,1321 @@
+namespace Inventory
+{
+    class DAL
+    {
+        //-------------------SqlConnection----------------------
+        #region
+        public static SqlConnection Connect()
+        {
+            string strCon = @"Data Source=DESKTOP-2OM01NU\MSSQLSERVER01;Initial Catalog=EMS;Integrated Security=True";
+            SqlConnection connection = new SqlConnection(strCon);
+            connection.Open();
+            return connection;
+        }
+        #endregion
+
+        //-------------------Login------------------------------
+        #region
+        public static void LoginUser(Class.Login userLogin)
+        {
+            string query = "SELECT * FROM tblUSER WHERE User_Name = @userName AND Password = @password";
+            SqlConnection connection = Connect();
+            SqlCommand command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@userName",userLogin.Username);
+            command.Parameters.AddWithValue("@password", userLogin.Password);
+            command.ExecuteNonQuery();
+            DataTable dt = new DataTable();
+            SqlDataAdapter adapter = new SqlDataAdapter(command);
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                Thread th = new Thread(OpenMainMenuForm);
+                th.SetApartmentState(ApartmentState.STA);
+                th.Start();
+                //frmMainMenu fmm = new frmMainMenu();
+                //fmm.Show();
+                
+            }
+            else
+            {
+                MessageBox.Show("Invalid Username or Password!!!");
+                Thread th = new Thread(OpenLoginForm);
+                th.SetApartmentState(ApartmentState.STA);
+                th.Start();
+            }
+
+        }
+        #endregion
+
+        //-------------------User------------------------------
+        #region
+
+        //User View
+        //public static DataSet ViewUser()
+        //{
+        //    string query = "SELECT * FROM tblUSER";
+        //    SqlConnection connection = Connect();
+        //    SqlCommand command = new SqlCommand(query, connection);
+        //    command.CommandType = CommandType.Text;
+        //    SqlDataAdapter adapter = new SqlDataAdapter(command);
+        //    DataSet ds = new DataSet();
+        //    adapter.Fill(ds, "tblUSER");
+        //    return ds;
+        //}
+        //User Add
+        public static void SignUpUser(string fName, string uName, string password, string phone, string pName)
+        {
+            string query1 = "SELECT * FROM tblUSER WHERE User_Name = @userName";
+            SqlConnection connection = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection);
+            command1.Parameters.AddWithValue("@userName", uName);
+            command1.ExecuteNonQuery();
+            DataTable dt = new DataTable();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                MessageBox.Show("Username already Registered!!!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                frmSignUp fsu = new frmSignUp();
+                fsu.Show();
+            }
+            else
+            {
+
+                string query = "INSERT INTO tblUSER VALUES(@fullName, @userName, @password, @phone, @pName)";
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@userName", uName);
+                command.Parameters.AddWithValue("@fullName", fName);
+                command.Parameters.AddWithValue("@password", password);
+                command.Parameters.AddWithValue("@phone", phone);
+                command.Parameters.AddWithValue("@pName", pName);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    MessageBox.Show("User Registered Succesfully!!!");
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                 
+            }
+        }
+
+        //Change Password
+        public static void ChangePassword(string uName, string password, string newPassword)
+        {
+            string query1 = "SELECT * FROM tblUSER WHERE User_Name = @userName AND Password = @password";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.Parameters.AddWithValue("@userName", uName);
+            command1.Parameters.AddWithValue("@password", password);
+            command1.ExecuteNonQuery();
+            DataTable dt = new DataTable();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "UPDATE tblUSER SET Password = @newPassword WHERE User_Name = @userName AND Password = @password";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                //command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@newPassword", newPassword);
+                command.Parameters.AddWithValue("@userName", uName);
+                command.Parameters.AddWithValue("@password", password);
+                try
+                {
+                    command.ExecuteNonQuery();                
+                    MessageBox.Show("Password Changed Succesfully!!!");
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Invalid Input!!!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);                              
+            }
+        }
+
+        //User Delete
+        public static void DeleteUser(string uName, string password)
+        {
+            string query = "SELECT * FROM tblUSER WHERE User_Name = @userName AND Password = @password";
+            SqlConnection connection = Connect();
+            SqlCommand command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@userName", uName);
+            command.Parameters.AddWithValue("@password", password);
+            command.ExecuteNonQuery();
+            DataTable dt = new DataTable();
+            SqlDataAdapter adapter = new SqlDataAdapter(command);
+            adapter.Fill(dt);
+           
+            if (dt.Rows.Count == 1)
+            {
+                string query1 = "DELETE FROM tblUSER WHERE User_Name = @userName AND Password = @password";
+                SqlConnection connection1 = Connect();
+                SqlCommand command1 = new SqlCommand(query1, connection1);
+                command1.CommandType = CommandType.Text;
+                command1.Parameters.AddWithValue("@userName", uName);
+                command1.Parameters.AddWithValue("@password", password);
+                try
+                {
+                    command1.ExecuteNonQuery();
+                    MessageBox.Show("User Removed Succesfully!!!");
+                    //Thread th1 = new Thread(OpenLoginForm);
+                    //th1.SetApartmentState(ApartmentState.STA);
+                    //th1.Start();
+                    Thread th = new Thread(OpenLoginForm);
+                    th.SetApartmentState(ApartmentState.STA);
+                    th.Start();
+                    CloseMainMenuForm();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Invalid Input!!!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+       
+        //Forgot Password
+        public static void ForgotPassword(string userName, string petName)
+        {
+            string query1 = "SELECT * FROM tblUSER WHERE User_Name = @userName AND Pet_Name = @petName";
+            SqlConnection connection = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection);
+            command1.Parameters.AddWithValue("@userName",userName);
+            command1.Parameters.AddWithValue("@petName", petName);
+            command1.ExecuteNonQuery();
+            DataTable dt = new DataTable();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            adapter.Fill(dt);
+
+            if (dt.Rows.Count == 1)
+            {
+                frmChangeForgotPassword fcfd = new frmChangeForgotPassword();
+                fcfd.Show();
+            }
+            else
+            {
+                MessageBox.Show("Invalid Username or Pet Name!!!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                frmForgotPassword ffp = new frmForgotPassword();
+                ffp.Show();
+            }
+        }
+
+        //User Search
+        public static DataSet SearchUser(string userName)
+        {
+            string query1 = "SELECT * FROM tblUSER WHERE User_Name = @userName";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@userName", userName);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter1 = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter1.Fill(dt);
+            DataSet ds = new DataSet();
+
+            if (dt.Rows.Count == 1)
+            {
+                adapter1.Fill(ds, "tblUSER");
+            }
+            else
+            {
+                MessageBox.Show("User Unavailable!!!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            return ds;
+        }
+
+        //Add New Password
+        public static void AddNewPassword(string userName, string newPassword)
+        {
+            string query1 = "SELECT * FROM tblUSER WHERE User_Name = @userName";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@userName", userName);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter1 = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter1.Fill(dt);
+            DataSet ds = new DataSet();
+            if (dt.Rows.Count == 1)
+            {
+                string query = "UPDATE tblUSER SET Password = @newPassword WHERE User_Name = @userName";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                //command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@userName", userName);
+                command.Parameters.AddWithValue("@newPassword", newPassword);
+                try
+                {
+                    command.ExecuteNonQuery();                
+                    MessageBox.Show("Password Changed Succesfully!!!");
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Invalid Input!!!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);                              
+            }
+            
+        }
+        #endregion
+
+        //-------------------Product---------------------------
+        #region
+        //Product View
+        public static DataSet ViewProduct()
+        {
+            string query = "SELECT * FROM tblPRODUCT";
+            SqlConnection connection = Connect();
+            SqlCommand command = new SqlCommand(query, connection);
+            command.CommandType = CommandType.Text;
+            SqlDataAdapter adapter = new SqlDataAdapter(command);
+            DataSet ds = new DataSet();
+            adapter.Fill(ds, "tblPRODUCT");
+            return ds;
+        }
+
+        //Product Add
+        public static void AddProduct(int pID, string pDes, int quantity, double price, int sID)
+        {
+            string query1 = "SELECT * FROM tblPRODUCT WHERE Product_ID = @pID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@pID", pID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                MessageBox.Show("Product with this Product ID already Exists!!!");
+                frmProductModule fpm = new frmProductModule();
+                fpm.Show();
+            }
+            else 
+            {
+                string query = "INSERT INTO tblPRODUCT VALUES (@pID, @pDes, @quantity, @price, @supplier)";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@pID", pID);
+                command.Parameters.AddWithValue("@pDes", pDes);
+                command.Parameters.AddWithValue("@quantity", quantity);
+                command.Parameters.AddWithValue("@supplier", sID);
+                command.Parameters.AddWithValue("@price", price);
+                //command.ExecuteNonQuery();
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewProduct();
+                    MessageBox.Show("Product Added Succesfully!!!");
+                    frmProductDetails fpd = new frmProductDetails();
+                    fpd.Show();
+                }
+                catch (SqlException ex)
+                {                   
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+        }
+
+        //Product Update
+        public static void UpdateProduct(int pID, string pDes, int quantity, double price, int sID)
+        {
+            string query1 = "SELECT * FROM tblPRODUCT WHERE Product_ID = @pID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@pID", pID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "UPDATE tblPRODUCT SET Product_Description = @pDes, Quantity = @quantity, Price = @price, Supplier_ID = @sID WHERE Product_ID = @pID;";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@pID", pID);
+                command.Parameters.AddWithValue("@pDes", pDes);
+                command.Parameters.AddWithValue("@quantity", quantity);
+                command.Parameters.AddWithValue("@sID", sID);
+                command.Parameters.AddWithValue("@price", price);
+                //command.ExecuteNonQuery();
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewProduct();                  
+                    MessageBox.Show("Product Updated Succesfully!!!");
+                    frmProductDetails fpd = new frmProductDetails();
+                    fpd.Show();
+                }
+                catch (SqlException ex)
+                {
+                                        MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Product with this Product ID Unavailable to Update!!!");
+                frmProductModule fpm = new frmProductModule();
+                fpm.Show();
+            }
+        }
+
+        //Product Delete
+        public static void DeleteProduct(int pID)
+        {
+            string query1 = "SELECT * FROM tblPRODUCT WHERE Product_ID = @pID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@pID", pID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "DELETE FROM tblPRODUCT WHERE Product_ID = @pID;";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@pID", pID);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewProduct();
+                    MessageBox.Show("Product Deleted Succesfully!!!");
+                    frmProductDetails fpd = new frmProductDetails();
+                    fpd.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!","Error," , MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Product Unavailable!!!");
+                frmProductModule fpm = new frmProductModule();
+                fpm.Show();
+            }
+        }
+
+        //Product Search
+        public static DataSet SearchProduct(int pID)
+        {
+            string query1 = "SELECT * FROM tblPRODUCT WHERE Product_ID = @pID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@pID", pID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter1 = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter1.Fill(dt);
+            DataSet ds = new DataSet();
+
+            if (dt.Rows.Count == 1)
+            {
+                adapter1.Fill(ds, "tblPRODUCT");
+            }
+            else
+            {
+                MessageBox.Show("Product Unavailable!!!");
+            }
+            return ds;
+        }
+#endregion
+
+        //-------------------CUSTOMER--------------------------
+        #region
+        //Customer View
+        public static DataSet ViewCustomer()
+        {
+            string query = "SELECT * FROM tblCUSTOMER";
+            SqlConnection connection = Connect();
+            SqlCommand command = new SqlCommand(query, connection);
+            command.CommandType = CommandType.Text;
+            SqlDataAdapter adapter = new SqlDataAdapter(command);
+            DataSet ds = new DataSet();
+            adapter.Fill(ds, "tblCUSTOMER");
+            return ds;
+        }
+
+
+        //Customer Add
+        public static void AddCustomer(int cID, string cName, string email, string city, string state, int pCode)
+        {
+            string query1 = "SELECT * FROM tblCUSTOMER WHERE Customer_ID = @cID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@cID", cID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                MessageBox.Show("Customer with Customer_ID (" + cID + ") already Exists!!!");
+                frmCustomerModule fcm = new frmCustomerModule();
+                fcm.Show();
+            }
+            else
+            {
+                string query = "INSERT INTO tblCUSTOMER VALUES (@cID, @cName, @email, @city, @state, @pCode)";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@cID", cID);
+                command.Parameters.AddWithValue("@cName", cName);
+                command.Parameters.AddWithValue("@email", email);
+                command.Parameters.AddWithValue("@city", city);
+                command.Parameters.AddWithValue("@state", state);
+                command.Parameters.AddWithValue("@pCode", pCode);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewCustomer();
+                    MessageBox.Show("Customer Added Succesfully!!!");
+                    frmCustomerDetails fcd = new frmCustomerDetails();
+                    fcd.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+        }
+
+        //Customer Update
+        public static void UpdateCustomer(int cID, string cName, string email, string city, string state, int pCode)
+        {
+            string query1 = "SELECT * FROM tblCUSTOMER WHERE Customer_ID = @cID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@cID", cID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "UPDATE tblCUSTOMER SET Customer_Name = @cName, Email = @email, Customer_City = @city, Customer_State = @state, Customer_Postel_Code = @pCode WHERE Customer_ID = @cID;";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@cID", cID);
+                command.Parameters.AddWithValue("@cName", cName);
+                command.Parameters.AddWithValue("@email", email);
+                command.Parameters.AddWithValue("@city", city);
+                command.Parameters.AddWithValue("@state", state);
+                command.Parameters.AddWithValue("@pCode", pCode);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewCustomer();
+                    MessageBox.Show("Customer Updated Succesfully!!!");
+                    frmCustomerDetails fcd = new frmCustomerDetails();
+                    fcd.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Customer with Customer ID (" + cID + ") Unavailable to Update!!!");
+                frmCustomerModule fcm = new frmCustomerModule();
+                fcm.Show();
+            }
+        }
+
+        //Customer Delete
+        public static void DeleteCustomer(int cID)
+        {
+            string query1 = "SELECT * FROM tblCUSTOMER WHERE Customer_ID = @cID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@cID", cID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "DELETE FROM tblCUSTOMER WHERE Customer_ID = @cID;";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@cID", cID);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewCustomer();
+                    MessageBox.Show("Customer Deleted Succesfully!!!");
+                    frmCustomerDetails fcd = new frmCustomerDetails();
+                    fcd.Show();
+                }
+                catch (SqlException ex)
+                {
+                     MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Customer Unavailable!!!");
+                frmCustomerModule fcm = new frmCustomerModule();
+                fcm.Show();
+            }
+        }
+
+        //Customer Search
+        public static DataSet SearchCustomer(int cID)
+        {
+            string query1 = "SELECT * FROM tblCUSTOMER WHERE Customer_ID = @cID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@cID", cID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter1 = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter1.Fill(dt);
+            DataSet ds = new DataSet();
+
+            if (dt.Rows.Count == 1)
+            {
+                adapter1.Fill(ds, "tblCUSTOMER");
+            }
+            else
+            {
+                MessageBox.Show("Customer Unavailable!!!");
+            }
+            return ds;
+        }
+        #endregion
+
+        //-------------------Order-----------------------------
+        #region
+
+        //Order View
+        public static DataSet ViewOrder()
+        {
+            string query = "SELECT * FROM tblORDER";
+            SqlConnection connection = Connect();
+            SqlCommand command = new SqlCommand(query, connection);
+            command.CommandType = CommandType.Text;
+            SqlDataAdapter adapter = new SqlDataAdapter(command);
+            DataSet ds = new DataSet();
+            adapter.Fill(ds, "tblORDER");
+            return ds;
+        }
+
+        //Order Add
+        public static void AddOrder(int oID, string oDate, int cID, int eID)
+        {
+            string query1 = "SELECT * FROM tblORDER WHERE Order_ID = @oID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@oID", oID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                MessageBox.Show("Order with this Order_ID already Exists!!!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                frmOrderModule fom = new frmOrderModule();
+                fom.Show();
+            }
+            else
+            {
+                string query = "INSERT INTO tblORDER VALUES (@oID, @oDate, @cID, @eID)";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@cID", cID);
+                command.Parameters.AddWithValue("@oID", oID);
+                command.Parameters.AddWithValue("@oDate", oDate);
+                command.Parameters.AddWithValue("@eID", eID);
+                
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewOrder();
+                    MessageBox.Show("Order Added Succesfully!! ");
+                    frmOrderDetails fod = new frmOrderDetails();
+                    fod.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Invalid Input!!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error );
+                }
+            }
+        }
+
+
+        //Order Update
+        public static void UpdateOrder(int oID, string oDate, int cID, int eID)
+        {
+            string query1 = "SELECT * FROM tblORDER WHERE Order_ID = @oID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@oID", oID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "UPDATE tblORDER SET Order_Date = @oDate, Customer_ID = @cID, Employee_ID = @eID WHERE Order_ID = @oID;";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@cID", cID);
+                command.Parameters.AddWithValue("@oID", oID);
+                command.Parameters.AddWithValue("@oDate", oDate);
+                command.Parameters.AddWithValue("@eID", eID);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewOrder();
+                    MessageBox.Show("Order Updated Succesfully!!!");
+                    frmOrderDetails fod = new frmOrderDetails();
+                    fod.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Invalid Input!!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Order with Order ID (" +oID+ ") Unavailable to Update!!!");
+                frmOrderModule fom = new frmOrderModule();
+                fom.Show();
+            }
+        }
+
+        //Order Delete
+        public static void DeleteOrder(int oID)
+        {
+            string query1 = "SELECT * FROM tblORDER WHERE Order_ID = @oID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@oID", oID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "DELETE FROM tblORDER WHERE Order_ID = @oID;";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@oID", oID);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewOrder();                 
+                    MessageBox.Show("Order Deleted Succesfully!!!");
+                    frmOrderDetails fod = new frmOrderDetails();
+                    fod.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Invalid Input!!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Order Unavailable!!!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                frmOrderModule fom = new frmOrderModule();
+                fom.Show();
+            }
+
+        }
+
+        //Order Search
+        public static DataSet SearchOrder(int oID)
+        {
+            string query1 = "SELECT * FROM tblORDER WHERE Order_ID = @oID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@oID", oID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter1 = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter1.Fill(dt);
+            DataSet ds = new DataSet();
+
+            if (dt.Rows.Count == 1)
+            {
+                adapter1.Fill(ds, "tblORDER");
+            }
+            else
+            {
+                MessageBox.Show("Order Unavailable!!!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            return ds;
+        }
+        #endregion
+
+        //-------------------OrderLine-------------------------
+        #region
+        //OrderLine View
+        public static DataSet ViewOrderLine()
+        {
+            string query = "SELECT * FROM tblORDERLINE";
+            SqlConnection connection = Connect();
+            SqlCommand command = new SqlCommand(query, connection);
+            command.CommandType = CommandType.Text;
+            SqlDataAdapter adapter = new SqlDataAdapter(command);
+            DataSet ds = new DataSet();
+            adapter.Fill(ds, "tblORDERLINE");
+            return ds;
+        }
+
+        //OrderLine Add
+        public static void AddOrderLine(int oID, int pID, int oQua)
+        {
+            string query1 = "SELECT * FROM tblORDERLINE WHERE Order_ID = @oID AND Product_ID = @pID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@oID", oID);
+            command1.Parameters.AddWithValue("@pID", pID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                MessageBox.Show("Orderline with Order_ID (" + oID + ") and Product_ID (" + pID + ") Already Exists!!!");
+                frmOrderLineModule folm = new frmOrderLineModule();
+                folm.Show();
+            }
+            else
+            {
+                string query = "INSERT INTO tblORDERLINE VALUES (@oID, @pID, @oQua)";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@oID", oID);
+                command.Parameters.AddWithValue("@pID", pID);
+                command.Parameters.AddWithValue("@oQua", oQua);
+
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewOrderLine();
+                    MessageBox.Show("Orderline Added Succesfully!!!");
+                    frmOrderLineDetails fold = new frmOrderLineDetails();
+                    fold.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Invalid Data Entered!!!");
+                }
+            }
+        }
+
+
+        //OrderLine Update
+        public static void UpdateOrderLine(int oID, int pID, int oQua)
+        {
+            string query1 = "SELECT * FROM tblORDERLINE WHERE Order_ID = @oID AND Product_ID = @pID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@pID", pID);
+            command1.Parameters.AddWithValue("@oID", oID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "UPDATE tblORDERLINE SET Ordered_Quantity = @oQua WHERE Order_ID = @oID AND Product_ID = @pID; ";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@oID", oID);
+                command.Parameters.AddWithValue("@pID", pID);
+                command.Parameters.AddWithValue("@oQua", oQua);
+                //command.ExecuteNonQuery();
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewOrderLine();
+                    MessageBox.Show("Orderline Updated Succesfully!!!");
+                    frmOrderLineDetails fold = new frmOrderLineDetails();
+                    fold.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Orderline with Order ID (" + oID + ") and product ID (" + pID + ") is Unavailable to Update!!!");
+                frmOrderLineModule folm = new frmOrderLineModule();
+                folm.Show();
+            }
+        }
+
+        //OrderLine Delete
+        public static void DeleteOrderLine(int oID, int pID)
+        {
+            string query1 = "SELECT * FROM tblORDERLINE WHERE Order_ID = @oID AND Product_ID = @pID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@oID", oID);
+            command1.Parameters.AddWithValue("@pID", pID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "DELETE FROM tblORDERLINE WHERE Order_ID = @oID AND Product_ID = @pID;";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@oID", oID);
+                command.Parameters.AddWithValue("@pID", pID);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewOrderLine();
+                    MessageBox.Show("Orderline Deleted Succesfully!!!");
+                    frmOrderLineDetails fold = new frmOrderLineDetails();
+                    fold.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Orderline Unavailable!!!");
+                frmOrderLineModule folm = new frmOrderLineModule();
+                folm.Show();
+            }
+
+        }
+
+        //OrderLine Search
+        public static DataSet SearchOrderline(int oID, int pID)
+        {
+            string query1 = "SELECT * FROM tblORDERLINE WHERE Order_ID = @oID AND Product_ID = @pID ";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@oID", oID);
+            command1.Parameters.AddWithValue("@pID", pID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter1 = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter1.Fill(dt);
+            DataSet ds = new DataSet();
+
+            if (dt.Rows.Count == 1)
+            {
+                adapter1.Fill(ds, "tblORDERLINE");
+            }
+            else
+            {
+                MessageBox.Show("Orderline Unavailable!!!");
+            }
+            return ds;
+        }
+        #endregion
+
+        //-------------------Employee--------------------------
+        #region
+        //Employee View
+        public static DataSet ViewEmployee()
+        {
+            string query = "SELECT * FROM tblEMPLOYEE";
+            SqlConnection connection = Connect();
+            SqlCommand command = new SqlCommand(query, connection);
+            command.CommandType = CommandType.Text;
+            SqlDataAdapter adapter = new SqlDataAdapter(command);
+            DataSet ds = new DataSet();
+            adapter.Fill(ds, "tblEMPLOYEE");
+            return ds;
+        }
+
+
+        //Employee Add
+        public static void AddEmployee(int eID, string eName, string email, string address, string pNo)
+        {
+            string query1 = "SELECT * FROM tblEMPLOYEE WHERE Employee_ID = @eID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@eID", eID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                MessageBox.Show("Employee with Employee ID (" + eID +") already Exists!!!");
+                frmEmployeeModule fcm = new frmEmployeeModule();
+                fcm.Show();
+            }
+            else
+            {
+                string query = "INSERT INTO tblEMPLOYEE VALUES (@eID, @eName, @email, @address, @pNo)";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@eID", eID);
+                command.Parameters.AddWithValue("@eName", eName);
+                command.Parameters.AddWithValue("@email", email);
+                command.Parameters.AddWithValue("@address", address);
+                command.Parameters.AddWithValue("@pNo", pNo);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewEmployee();
+                    MessageBox.Show("Employee Added Succesfully!!!");
+                    frmEmployeeDetails fcd = new frmEmployeeDetails();
+                    fcd.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+        }
+
+        //Employee Update
+        public static void UpdateEmployee(int eID, string eName, string email, string address, string pNo)
+        {
+            string query1 = "SELECT * FROM tblEMPLOYEE WHERE Employee_ID = @eID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@eID", eID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "UPDATE tblEMPLOYEE SET Employee_Name = @eName, Email = @email, Address = @address, Phone_No = @pNo WHERE Employee_ID = @eID;";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@eID", eID);
+                command.Parameters.AddWithValue("@eName", eName);
+                command.Parameters.AddWithValue("@email", email);
+                command.Parameters.AddWithValue("@address", address);
+                command.Parameters.AddWithValue("@pNo", pNo);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewEmployee();
+                    MessageBox.Show("Employee Updated Succesfully!!!");
+                    frmEmployeeDetails fcd = new frmEmployeeDetails();
+                    fcd.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Employee with Employee ID (" +eID+ ") Is Unavailable to Update!!!");
+                frmEmployeeModule fcm = new frmEmployeeModule();
+                fcm.Show();
+            }
+        }
+
+        //Employee Delete
+        public static void DeleteEmployee(int eID)
+        {
+            string query1 = "SELECT * FROM tblEMPLOYEE WHERE Employee_ID = @eID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@eID", eID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "DELETE FROM tblEMPLOYEE WHERE Employee_ID = @eID;";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@eID", eID);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewEmployee();
+                    MessageBox.Show("Employee Deleted Succesfully!!!");
+                    frmEmployeeDetails fcd = new frmEmployeeDetails();
+                    fcd.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Employee Unavailable!!!");
+                frmEmployeeModule fcm = new frmEmployeeModule();
+                fcm.Show();
+            }
+        }
+
+        //Employee Search
+        public static DataSet SearchEmployee(int eID)
+        {
+            string query1 = "SELECT * FROM tblEMPLOYEE WHERE Employee_ID = @eID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@eID", eID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter1 = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter1.Fill(dt);
+            DataSet ds = new DataSet();
+
+            if (dt.Rows.Count == 1)
+            {
+                adapter1.Fill(ds, "tblEMPLOYEE");
+            }
+            else
+            {
+                MessageBox.Show("Employee Unavailable!!!");
+            }
+            return ds;
+        }
+        #endregion
+
+        //-------------------Supplier--------------------------
+        #region
+        //Supplier View
+        public static DataSet ViewSupplier()
+        {
+            string query = "SELECT * FROM tblSUPPLIER";
+            SqlConnection connection = Connect();
+            SqlCommand command = new SqlCommand(query, connection);
+            command.CommandType = CommandType.Text;
+            SqlDataAdapter adapter = new SqlDataAdapter(command);
+            DataSet ds = new DataSet();
+            adapter.Fill(ds, "tblSUPPLIER");
+            return ds;
+        }
+
+
+        //Supplier Add
+        public static void AddSupplier(int sID, string sName,  string address, string pNo)
+        {
+            string query1 = "SELECT * FROM tblSUPPLIER WHERE Supplier_ID = @sID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@sID", sID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                MessageBox.Show("Supplier with Supplier ID (" + sID + ") already Exists!!!" , "Error!!" , MessageBoxButtons.OK, MessageBoxIcon.Error);
+                frmEmployeeModule fcm = new frmEmployeeModule();
+                fcm.Show();
+            }
+            else
+            {
+                string query = "INSERT INTO tblSUPPLIER VALUES (@sID, @sName, @address, @pNo)";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@sID", sID);
+                command.Parameters.AddWithValue("@sName", sName);
+                command.Parameters.AddWithValue("@address", address);
+                command.Parameters.AddWithValue("@pNo", pNo);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewSupplier();
+                    MessageBox.Show("Supplier Added Succesfully!!!");
+                    frmSupplierDetails fsd = new frmSupplierDetails();
+                    fsd.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+        }
+
+        //Supplier Update
+        public static void UpdateSupplier(int sID, string sName, string address, string pNo)
+        {
+            string query1 = "SELECT * FROM tblSUPPLIER WHERE Supplier_ID = @sID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@sID", sID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "UPDATE tblSUPPLIER SET Supplier_Name = @sName, Address = @address, Phone_No = @pNo WHERE Supplier_ID = @sID;";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@sID", sID);
+                command.Parameters.AddWithValue("@sName", sName);
+                command.Parameters.AddWithValue("@address", address);
+                command.Parameters.AddWithValue("@pNo", pNo);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewSupplier();
+                    MessageBox.Show("Supplier Updated Succesfully!!!");
+                    frmSupplierDetails fcd = new frmSupplierDetails();
+                    fcd.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Supplier with Supplier ID (" + sID + ") Is Unavailable to Update!!!");
+                frmSupplierModule fcm = new frmSupplierModule();
+                fcm.Show();
+            }
+        }
+
+        //Supplier Delete
+        public static void DeleteSupplier(int sID)
+        {
+            string query1 = "SELECT * FROM tblSUPPLIER WHERE Supplier_ID = @sID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@sID", sID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            if (dt.Rows.Count == 1)
+            {
+                string query = "DELETE FROM tblSUPPLIER WHERE Supplier_ID = @sID;";
+                SqlConnection connection = Connect();
+                SqlCommand command = new SqlCommand(query, connection);
+                command.CommandType = CommandType.Text;
+                command.Parameters.AddWithValue("@sID", sID);
+                try
+                {
+                    command.ExecuteNonQuery();
+                    ViewSupplier();
+                    MessageBox.Show("Supplier Deleted Succesfully!!!");
+                    frmSupplierDetails fcd = new frmSupplierDetails();
+                    fcd.Show();
+                }
+                catch (SqlException ex)
+                {
+                    MessageBox.Show("Unsuccesfull!!!");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Supplier Unavailable!!!");
+                frmSupplierModule fsm = new frmSupplierModule();
+                fsm.Show();
+            }
+        }
+
+        //Supplier Search
+        public static DataSet SearchSupplier(int sID)
+        {
+            string query1 = "SELECT * FROM tblSUPPLIER WHERE Supplier_ID = @sID";
+            SqlConnection connection1 = Connect();
+            SqlCommand command1 = new SqlCommand(query1, connection1);
+            command1.CommandType = CommandType.Text;
+            command1.Parameters.AddWithValue("@sID", sID);
+            command1.ExecuteNonQuery();
+            SqlDataAdapter adapter1 = new SqlDataAdapter(command1);
+            DataTable dt = new DataTable();
+            adapter1.Fill(dt);
+            DataSet ds = new DataSet();
+
+            if (dt.Rows.Count == 1)
+            {
+                adapter1.Fill(ds, "tblSUPPLIER");
+            }
+            else
+            {
+                MessageBox.Show("Supplier Unavailable!!!");
+            }
+            return ds;
+        }
+        #endregion
+
+        #region
+        private static void OpenMainMenuForm()
+        {
+            Application.Run(new frmMainMenu());
+        }
+
+        private static void CloseMainMenuForm()
+        {
+            Application.OpenForms["frmMainMenu"].Close();
+        }
+
+        private static void OpenLoginForm()
+        {
+            Application.Run(new frmLogin());
+        }
+        #endregion
+
+    }//End of Class DAL
+}
